@@ -1,0 +1,271 @@
+{
+  "name": "Zuha Registry — Flow A: Intake Form",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Zuha's Wedding Registry",
+        "formDescription": "Drop 1 to 20 product links below. We'll look them up and add them to the registry automatically.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Added By",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "Zuha" },
+                  { "option": "Fiancé" }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Product Links",
+              "fieldType": "textarea",
+              "placeholder": "Paste up to 20 product URLs, one per line",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "path": "zuhas-wedding-registry",
+          "respondWith": "text",
+          "responseText": "Processing your links — check the registry in a minute!"
+        }
+      },
+      "id": "form-trigger-node",
+      "name": "Registry Form Trigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [240, 300],
+      "webhookId": "zuha-registry-intake-v1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract, deduplicate, and detect vendor for each URL\nconst raw = $input.first().json['Product Links'] || '';\nconst addedBy = $input.first().json['Added By'] || 'Zuha';\n\n// Map Added By to ClickUp option UUID\nconst addedByMap = {\n  'Zuha': 'bac4e09e-7cf7-4f0f-b0f9-bac89528a23a',\n  'Fiancé': 'f366c6e5-9a52-47c1-a5ea-fc421f30bc82'\n};\nconst addedByUuid = addedByMap[addedBy] || addedByMap['Zuha'];\n\n// Extract all URLs from the textarea\nconst urlRegex = /https?:\\/\\/[^\\s,\\\"<>]+/g;\nconst matches = raw.match(urlRegex) || [];\n\n// Deduplicate\nconst unique = [...new Set(matches.map(u => u.trim()))];\n\nif (unique.length === 0) {\n  throw new Error('No valid URLs found in submission. Please paste at least 1 product URL.');\n}\nif (unique.length > 20) {\n  throw new Error(`Too many URLs: ${unique.length} submitted, maximum is 20.`);\n}\n\n// Vendor detection\nfunction detectVendor(url) {\n  const u = url.toLowerCase();\n  if (u.includes('amazon.') || u.includes('a.co/') || u.includes('amzn.to/')) return { name: 'Amazon', uuid: '6473fbf4-63fa-4fb0-9837-84063f9446b7' };\n  if (u.includes('crateandbarrel') || u.includes('cb2.')) return { name: 'Crate & Barrel', uuid: '13dab330-bb97-4adf-b98c-ee7b555e53c1' };\n  if (u.includes('williams-sonoma') || u.includes('williams sonoma') || u.includes('wsimgs')) return { name: 'Williams Sonoma', uuid: '736e36a7-799a-40ce-bf19-976838b9f18b' };\n  if (u.includes('target.com')) return { name: 'Target', uuid: 'b27937ac-992b-4eea-bccd-df367fa228d2' };\n  if (u.includes('bestbuy.com')) return { name: 'Best Buy', uuid: '902471bb-b070-4200-aefd-1662819c7425' };\n  return { name: 'Direct / Universal', uuid: '26e06bbb-3c70-4232-b4d9-ae80f976443b' };\n}\n\n// Extract URL slug as fallback product name\nfunction slugToName(url) {\n  try {\n    const u = new URL(url);\n    const parts = u.pathname.split('/').filter(p => p.length > 3 && !/^\\d+$/.test(p));\n    if (parts.length > 0) {\n      return parts[parts.length - 1]\n        .replace(/[-_]/g, ' ')\n        .replace(/\\b\\w/g, c => c.toUpperCase())\n        .substring(0, 100);\n    }\n  } catch (e) {}\n  return null;\n}\n\nconst items = unique.map((url, i) => {\n  const vendor = detectVendor(url);\n  const slugName = slugToName(url);\n  return {\n    url,\n    index: i,\n    vendor,\n    slugName,\n    addedBy,\n    addedByUuid,\n    taskName: slugName || `Registry Item ${i + 1}`\n  };\n});\n\nreturn items.map(item => ({ json: item }));"
+      },
+      "id": "parse-urls-node",
+      "name": "Parse & Validate URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 3500,
+          "redirect": { "redirect": { "followRedirects": true, "maxRedirects": 3 } },
+          "response": { "response": { "responseFormat": "text" } }
+        },
+        "batching": {
+          "batch": {
+            "batchSize": 5,
+            "batchInterval": 500
+          }
+        }
+      },
+      "id": "scrape-og-node",
+      "name": "Scrape OG Tags",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse OG tags from scraped HTML; fall back to URL slug\nconst item = $input.item.json;\nconst html = $input.item.json.data || '';\n\nfunction extractOg(html, prop) {\n  const re = new RegExp(`<meta[^>]*property=['\"]og:${prop}['\"][^>]*content=['\"]([^'\"]+)['\"]`, 'i');\n  const re2 = new RegExp(`<meta[^>]*content=['\"]([^'\"]+)['\"][^>]*property=['\"]og:${prop}['\"]`, 'i');\n  const m = html.match(re) || html.match(re2);\n  return m ? m[1].trim() : null;\n}\n\nconst isCaptcha = /robot check|captcha|are you human|verify you are/i.test(html);\nconst is403 = item.statusCode === 403 || item.error;\n\nlet productName = null;\nlet price = null;\nlet scrapeSucceeded = false;\n\nif (!isCaptcha && !is403 && html.length > 100) {\n  productName = extractOg(html, 'title');\n  price = extractOg(html, 'price:amount') || extractOg(html, 'price');\n  scrapeSucceeded = !!productName;\n}\n\n// Fall back to slug name\nif (!productName) {\n  productName = item.slugName || item.taskName;\n}\n\n// Parse price to number\nlet retailPrice = null;\nif (price) {\n  const num = parseFloat(price.replace(/[^0-9.]/g, ''));\n  if (!isNaN(num)) retailPrice = num;\n}\n\n// Determine price bracket UUID\nlet priceBracketUuid = null;\nif (retailPrice !== null) {\n  if (retailPrice < 50) priceBracketUuid = '1949e004-587e-4b77-8c4c-87e49d4aef46';\n  else if (retailPrice <= 150) priceBracketUuid = 'e8087ca4-e624-4baf-a022-62240f5f7b59';\n  else if (retailPrice <= 300) priceBracketUuid = '54048e14-106c-4211-a287-f935f924a246';\n  else priceBracketUuid = '0803e69d-5b32-4323-917b-377bddf2ea4a';\n}\n\nreturn [{\n  json: {\n    ...item,\n    productName,\n    retailPrice,\n    priceBracketUuid,\n    scrapeSucceeded,\n    blocked: isCaptcha || is403\n  }\n}];"
+      },
+      "id": "parse-og-node",
+      "name": "Extract OG Title & Price",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/list/1300320000015716/task",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ $credentials.value }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $json.productName }}\",\n  \"status\": \"RAW URL DROPPED\",\n  \"custom_fields\": [\n    { \"id\": \"5afbee8e-16bc-4c70-9acd-7647ffad17e4\", \"value\": \"{{ $json.url }}\" },\n    { \"id\": \"39c566b3-6c37-4c7e-999d-800000f902a3\", \"value\": \"{{ $json.productName }}\" },\n    { \"id\": \"12ae86f2-737f-4258-a457-6c87297c4cab\", \"value\": \"{{ $json.addedByUuid }}\" },\n    { \"id\": \"252a7a02-7796-4000-95ac-f9d4ac31e8ae\", \"value\": \"{{ $json.vendor.uuid }}\" }\n    {{ $json.retailPrice !== null ? ', { \"id\": \"9c281fab-686d-4b34-a08d-cb6f4f785857\", \"value\": ' + $json.retailPrice + ' }' : '' }}\n    {{ $json.priceBracketUuid ? ', { \"id\": \"e2247cef-64b9-429c-9bcc-bf9b60e25526\", \"value\": \"' + $json.priceBracketUuid + '\" }' : '' }}\n  ]\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5,
+              "batchInterval": 1100
+            }
+          },
+          "retry": {
+            "enabled": true,
+            "maxTries": 3,
+            "waitBetweenTries": 2000
+          }
+        }
+      },
+      "id": "create-clickup-task-node",
+      "name": "Create ClickUp Tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 180],
+      "continueOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "clickup-api-credential",
+          "name": "ClickUp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all items into succeeded/blocked buckets\nconst allItems = $input.all();\n\nconst succeeded = allItems.filter(i => !i.json.blocked && !i.json.error);\nconst blocked = allItems.filter(i => i.json.blocked);\n\nreturn [{\n  json: {\n    totalCount: allItems.length,\n    succeededCount: succeeded.length,\n    blockedCount: blocked.length,\n    succeededItems: succeeded.map(i => i.json.productName || i.json.url),\n    blockedItems: blocked.map((i, idx) => `${idx + 1}. ${i.json.url}`)\n  }\n}];"
+      },
+      "id": "aggregate-results-node",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "blocked-check",
+              "leftValue": "={{ $json.blockedCount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-blocked-node",
+      "name": "Any Blocked?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "formTitle": "Zuha's Registry — Manual Entry Needed",
+        "formDescription": "=The following {{ $json.blockedCount }} URL(s) were blocked by the retailer. Please fill in the product names and prices manually:\n\n{{ $json.blockedItems.join('\\n') }}",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Product Names (one per line, matching order above)",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Approximate Prices (one per line, numbers only)",
+              "fieldType": "textarea",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {
+          "path": "zuhas-registry-manual",
+          "respondWith": "text",
+          "responseText": "Manual entries received — adding to registry now!"
+        }
+      },
+      "id": "fallback-form-node",
+      "name": "Manual Entry Fallback Form",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [1780, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build digest comment for the ClickUp list\nconst items = $input.first().json;\nconst lines = (items.succeededItems || []).map((name, i) => `${i + 1}. ${name}`);\nconst msg = `Registry Intake Digest\\n\\nAdded ${items.succeededCount} item(s):\\n${lines.join('\\n')}`;\nreturn [{ json: { message: msg, listId: '1300320000015716' } }];"
+      },
+      "id": "build-digest-node",
+      "name": "Build Digest Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 420]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/list/{{ $json.listId }}/comment",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"comment_text\": \"{{ $json.message }}\" }",
+        "options": {}
+      },
+      "id": "post-digest-comment-node",
+      "name": "Post Digest Comment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 420],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "clickup-api-credential",
+          "name": "ClickUp API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Registry Form Trigger": {
+      "main": [[ { "node": "Parse & Validate URLs", "type": "main", "index": 0 } ]]
+    },
+    "Parse & Validate URLs": {
+      "main": [[ { "node": "Scrape OG Tags", "type": "main", "index": 0 } ]]
+    },
+    "Scrape OG Tags": {
+      "main": [[ { "node": "Extract OG Title & Price", "type": "main", "index": 0 } ]]
+    },
+    "Extract OG Title & Price": {
+      "main": [[ { "node": "Create ClickUp Tasks", "type": "main", "index": 0 } ]]
+    },
+    "Create ClickUp Tasks": {
+      "main": [[ { "node": "Aggregate Results", "type": "main", "index": 0 } ]]
+    },
+    "Aggregate Results": {
+      "main": [[ { "node": "Any Blocked?", "type": "main", "index": 0 } ]]
+    },
+    "Any Blocked?": {
+      "main": [
+        [ { "node": "Manual Entry Fallback Form", "type": "main", "index": 0 } ],
+        [ { "node": "Build Digest Message", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Manual Entry Fallback Form": {
+      "main": [[ { "node": "Build Digest Message", "type": "main", "index": 0 } ]]
+    },
+    "Build Digest Message": {
+      "main": [[ { "node": "Post Digest Comment", "type": "main", "index": 0 } ]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [{ "name": "wedding-registry" }],
+  "triggerCount": 1,
+  "updatedAt": "2026-11-24T00:00:00.000Z",
+  "versionId": "v1"
+}

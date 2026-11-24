@@ -1,0 +1,179 @@
+{
+  "name": "Zuha Registry — Flow B: Nightly AI Enrichment",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "triggerAtHour": 2,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger-node",
+      "name": "2 AM Daily Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.clickup.com/api/v2/list/1300320000015716/task",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "statuses[]", "value": "RAW URL DROPPED" },
+            { "name": "include_closed", "value": "false" },
+            { "name": "page", "value": "0" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-raw-tasks-node",
+      "name": "Fetch RAW URL DROPPED Tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "clickup-api-credential",
+          "name": "ClickUp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build a batch enrichment prompt for Claude\nconst tasks = $input.first().json.tasks || [];\n\nif (tasks.length === 0) {\n  return [{ json: { skipEnrichment: true, message: 'No RAW URL DROPPED tasks to enrich.' } }];\n}\n\nconst getField = (task, fieldId) => {\n  const cf = (task.custom_fields || []).find(f => f.id === fieldId);\n  return cf ? (cf.value || null) : null;\n};\n\nconst items = tasks.slice(0, 25).map((t, i) => ({\n  index: i + 1,\n  taskId: t.id,\n  taskName: t.name,\n  url: getField(t, '5afbee8e-16bc-4c70-9acd-7647ffad17e4') || '',\n  existingName: getField(t, '39c566b3-6c37-4c7e-999d-800000f902a3') || t.name\n}));\n\nconst promptItems = items.map(it =>\n  `${it.index}. Task ID: ${it.taskId}\\n   Name: ${it.existingName}\\n   URL: ${it.url}`\n).join('\\n\\n');\n\nconst systemPrompt = `You are a wedding registry analyst for Zuha, a Muslim woman in Houston/Dallas area. \nContext:\n- Moving in with fiancé soon; first apartment together\n- Zuha is a beginner cook learning halal meals; fiancé may have residency match in WV (small town) or stay in Houston/Dallas\n- 7-year planning horizon (residency period)\n- Apartment living: limited counter space, no drilling\n- Dual-career couple; both WFH some days\n- Google/Gemini ecosystem\n\nFor each numbered product below, return a JSON array where each object has:\n{\n  \"taskId\": \"<exact task ID>\",\n  \"cleanProductName\": \"<concise product name, max 80 chars>\",\n  \"retailPrice\": <number or null>,\n  \"guestPriceBracket\": \"<$50\" | \"$50\\u2013$150\" | \"$150\\u2013$300\" | \"$300+ (Group Gift)\" | null,\n  \"bestRegistryVendor\": \"Amazon\" | \"Crate & Barrel\" | \"Williams Sonoma\" | \"Target\" | \"Best Buy\" | \"Direct / Universal\" | null,\n  \"registryDecisionVerdict\": \"Auto-Shortlist (High ROI)\" | \"Keep If Counter Space Allows\" | \"Swap for Smarter/BIFL Alternative\" | \"Reject (Clutter/Failure Risk)\" | \"Needs Manual Verification\",\n  \"residencyHorizonTier\": \"7+ Yr Survivor (Attending-Ready)\" | \"Residency Workhorse (4\\u20136 Yrs)\" | \"3-Yr Disposable Risk\" | null,\n  \"roomZone\": \"Kitchen & Halal Prep\" | \"Sleep & Post-Call Recovery\" | \"Remote Home Office\" | \"Cleaning & Laundry\" | \"Bath & Linen\" | null,\n  \"halalFit\": \"Critical for Small-Town WV Bulk/Freezer\" | \"High Value in Both TX & WV\" | \"Optimized for Houston/Dallas Takeout/Fresh\" | \"Not Applicable\" | null,\n  \"beginnerCooking\": \"One-Touch / Foolproof\" | \"Guided App Recipes\" | \"Moderate Skill\" | \"High Burn / Timing Skill Risk\" | \"Non-Kitchen\" | null,\n  \"subscriptionTrap\": \"Zero Ongoing Fees\" | \"Optional Cloud Features\" | \"Mandatory Paywall / Proprietary Cartridges\" | null,\n  \"choiceQuotient\": <number 1-10 or null>,\n  \"familyGiftPitch\": \"<one-liner pitch for family, max 120 chars or null>\"\n}\nReturn ONLY valid JSON array. No markdown, no explanation. Use null for uncertain fields.\nFor registryDecisionVerdict, use 'Needs Manual Verification' when evidence is thin.`;\n\nreturn [{\n  json: {\n    items,\n    systemPrompt,\n    userPrompt: `Enrich these ${items.length} registry items:\\n\\n${promptItems}`,\n    skipEnrichment: false\n  }\n}];"
+      },
+      "id": "build-prompt-node",
+      "name": "Build Enrichment Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skipEnrichment }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "skip-check-node",
+      "name": "Skip If No Tasks",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $credentials.apiKey }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-6\",\n  \"max_tokens\": 4096,\n  \"system\": {{ JSON.stringify($json.systemPrompt) }},\n  \"messages\": [{\"role\": \"user\", \"content\": {{ JSON.stringify($json.userPrompt) }}}]\n}",
+        "options": { "timeout": 60000 }
+      },
+      "id": "claude-enrich-node",
+      "name": "Claude Enrichment Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 180],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "anthropic-api-credential",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude response and map to ClickUp field UUIDs\nconst claudeResponse = $input.first().json;\nconst text = claudeResponse.content?.[0]?.text || '';\n\n// Field ID map\nconst FIELDS = {\n  cleanProductName: '39c566b3-6c37-4c7e-999d-800000f902a3',\n  retailPrice: '9c281fab-686d-4b34-a08d-cb6f4f785857',\n  guestPriceBracket: 'e2247cef-64b9-429c-9bcc-bf9b60e25526',\n  bestRegistryVendor: '252a7a02-7796-4000-95ac-f9d4ac31e8ae',\n  registryDecisionVerdict: 'b10bb486-ceb9-4ec9-b5be-30045c1dc876',\n  residencyHorizonTier: '8951eea6-f9bd-4497-84bf-9d2300251092',\n  roomZone: '8991167a-0fd2-4a09-840c-4ef60986e5dd',\n  halalFit: '83f42a59-c059-4f49-beb3-93032e9a7460',\n  beginnerCooking: '2eba772a-cc1f-4a7e-a73b-214efafb98e5',\n  subscriptionTrap: '186dba7a-8067-4e19-b976-589c04e27f6d',\n  choiceQuotient: '263cd81c-b389-4fbd-a21b-5c1139c286f3',\n  familyGiftPitch: '78a0c2db-312b-436a-b342-13fe9fe41112'\n};\n\n// Option UUID map for dropdown fields\nconst OPTIONS = {\n  guestPriceBracket: { '<$50': '1949e004-587e-4b77-8c4c-87e49d4aef46', '$50\\u2013$150': 'e8087ca4-e624-4baf-a022-62240f5f7b59', '$150\\u2013$300': '54048e14-106c-4211-a287-f935f924a246', '$300+ (Group Gift)': '0803e69d-5b32-4323-917b-377bddf2ea4a' },\n  bestRegistryVendor: { 'Amazon': '6473fbf4-63fa-4fb0-9837-84063f9446b7', 'Crate & Barrel': '13dab330-bb97-4adf-b98c-ee7b555e53c1', 'Williams Sonoma': '736e36a7-799a-40ce-bf19-976838b9f18b', 'Target': 'b27937ac-992b-4eea-bccd-df367fa228d2', 'Best Buy': '902471bb-b070-4200-aefd-1662819c7425', 'Direct / Universal': '26e06bbb-3c70-4232-b4d9-ae80f976443b' },\n  registryDecisionVerdict: { 'Auto-Shortlist (High ROI)': '03c524cf-2261-49bf-b158-d75bd9dec2f5', 'Keep If Counter Space Allows': '4261e542-3028-40f1-81a5-4ee3eaf5f4a7', 'Swap for Smarter/BIFL Alternative': 'b061dd30-7e71-4450-935b-2eb7cdec4ff0', 'Reject (Clutter/Failure Risk)': '597738cd-9ce8-4ef0-bd07-de37b92e17c5', 'Needs Manual Verification': '736ebe11-8bc1-49b3-81dc-7e7c98648eff' },\n  residencyHorizonTier: { '7+ Yr Survivor (Attending-Ready)': '8a824736-8ed2-416d-95a2-8a8832b33f9b', 'Residency Workhorse (4\\u20136 Yrs)': '8db765b3-3a2d-4945-8d77-85dc5c274607', '3-Yr Disposable Risk': 'bffe913e-b017-4698-9594-b2776ec83dec' },\n  roomZone: { 'Kitchen & Halal Prep': '51467d11-13b0-4d79-8ba9-0fd53c0e2de5', 'Sleep & Post-Call Recovery': '24f98a71-551d-4f98-9406-9cd38260c795', 'Remote Home Office': '967e0842-bd2b-4bef-92aa-e51cdd6c5228', 'Cleaning & Laundry': 'b075bc77-13df-4284-b6b6-83fc5a5becd6', 'Bath & Linen': 'ccf65df1-48d6-437d-b76d-6a6b58ae762c' },\n  halalFit: { 'Critical for Small-Town WV Bulk/Freezer': '30072666-6289-46c8-acf8-a2c16bed48f9', 'High Value in Both TX & WV': 'bfbd22ca-a38e-4ff8-badf-0dbf40b6ac25', 'Optimized for Houston/Dallas Takeout/Fresh': 'cda5e4db-3d72-4fd9-aa2a-3ace96262af7', 'Not Applicable': 'dd94f839-8eb3-4413-b35c-b0c9ab55946d' },\n  beginnerCooking: { 'One-Touch / Foolproof': '95985452-fddc-4dcf-98b2-e2fefd331e48', 'Guided App Recipes': '645a797e-880a-4748-abd2-c29912234b7b', 'Moderate Skill': '4d446b6e-c44d-46e4-ac10-41b6407c60f2', 'High Burn / Timing Skill Risk': 'df5c25b1-3513-4d54-8dd8-e1c0ff8e54ca', 'Non-Kitchen': '4d2fafed-6a9f-4b5f-a8aa-7591af1af8ea' },\n  subscriptionTrap: { 'Zero Ongoing Fees': '9e2cdbe6-7821-417d-8f2d-998d6149c533', 'Optional Cloud Features': 'bc29857a-bdc9-46bf-b3f6-59de88758a52', 'Mandatory Paywall / Proprietary Cartridges': 'ebacb58c-2958-419b-a0c1-4ff601ac20f0' }\n};\n\nlet enrichedItems;\ntry {\n  enrichedItems = JSON.parse(text);\n} catch (e) {\n  const match = text.match(/\\[.*\\]/s);\n  if (match) enrichedItems = JSON.parse(match[0]);\n  else throw new Error('Claude returned non-JSON: ' + text.substring(0, 200));\n}\n\nconst AI_ENRICHED_STATUS = 'sc1300320000015716_rkXp4gAL';\n\nreturn enrichedItems.map(item => {\n  const customFields = [];\n  for (const [key, fieldId] of Object.entries(FIELDS)) {\n    const val = item[key];\n    if (val === null || val === undefined) continue;\n    if (OPTIONS[key]) {\n      const uuid = OPTIONS[key][val];\n      if (uuid) customFields.push({ id: fieldId, value: uuid });\n    } else {\n      customFields.push({ id: fieldId, value: val });\n    }\n  }\n  return {\n    json: {\n      taskId: item.taskId,\n      status: AI_ENRICHED_STATUS,\n      customFields\n    }\n  };\n});"
+      },
+      "id": "parse-claude-node",
+      "name": "Parse Claude JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 180]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/task/{{ $json.taskId }}",
+        "method": "PUT",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"AI ENRICHED\",\n  \"custom_fields\": {{ JSON.stringify($json.customFields) }}\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5,
+              "batchInterval": 1100
+            }
+          }
+        }
+      },
+      "id": "update-tasks-node",
+      "name": "Update Tasks to AI ENRICHED",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 180],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "clickup-api-credential",
+          "name": "ClickUp API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "2 AM Daily Trigger": {
+      "main": [[ { "node": "Fetch RAW URL DROPPED Tasks", "type": "main", "index": 0 } ]]
+    },
+    "Fetch RAW URL DROPPED Tasks": {
+      "main": [[ { "node": "Build Enrichment Prompt", "type": "main", "index": 0 } ]]
+    },
+    "Build Enrichment Prompt": {
+      "main": [[ { "node": "Skip If No Tasks", "type": "main", "index": 0 } ]]
+    },
+    "Skip If No Tasks": {
+      "main": [
+        [],
+        [ { "node": "Claude Enrichment Call", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Claude Enrichment Call": {
+      "main": [[ { "node": "Parse Claude JSON", "type": "main", "index": 0 } ]]
+    },
+    "Parse Claude JSON": {
+      "main": [[ { "node": "Update Tasks to AI ENRICHED", "type": "main", "index": 0 } ]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "staticData": null,
+  "tags": [{ "name": "wedding-registry" }],
+  "triggerCount": 1,
+  "updatedAt": "2026-11-24T00:00:00.000Z",
+  "versionId": "v1"
+}

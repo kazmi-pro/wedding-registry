@@ -1,0 +1,350 @@
+{
+  "workspace_id": "90161547829",
+  "space_id": "1300320000001326",
+  "list_id": "1300320000015716",
+  "list_url": "https://app.clickup.com/90161547829/v/l/li/1300320000015716",
+  "statuses": {
+    "RAW URL DROPPED": "sc1300320000015716_7ZaZJW0n",
+    "NEEDS QUICK DETAILS": "MANUAL_ADD_IN_UI",
+    "AI ENRICHED": "sc1300320000015716_rkXp4gAL",
+    "SHORTLISTED": "sc1300320000015716_exFDwvNe",
+    "ASSIGNED TO FAMILY": "sc1300320000015716_2HQ3UIPp",
+    "ON PUBLIC REGISTRY": "sc1300320000015716_PUiZpI1H",
+    "PURCHASED / GIFTED": "sc1300320000015716_sVw8kHcJ",
+    "REJECTED / CLUTTER": "sc1300320000015716_2HOawCHj"
+  },
+  "views": {
+    "Master Decision Matrix": "2kz0r2hn-4696",
+    "High-ROI 7-Yr Shortlist": "2kz0r2hn-4716",
+    "Hype & Paywall Audit": "2kz0r2hn-4736",
+    "Family & Relatives Gift Menu": "2kz0r2hn-4756",
+    "WV vs. TX Match Toggle": "2kz0r2hn-4776",
+    "Gift Cockpit & Thank-You Tracker": "2kz0r2hn-4836"
+  },
+  "fields": {
+    "Renter / Apartment Install Friction": {
+      "id": "020382d2-845e-4f22-b6b6-5d7f1d5ba04b",
+      "type": "drop_down",
+      "options": {
+        "Zero-Install / Plug-and-Play": "f3b8be44-a07c-4ef7-a4d9-9784981ea8de",
+        "No-Drill / Adhesive Retrofit": "e96d5729-c3fc-43a9-8cde-3edd4c7d33f7",
+        "Requires Hardwiring / Drilling (Avoid)": "196ece4c-4610-4df5-89bd-2fede05f3c07"
+      }
+    },
+    "Regret & Friction Tags": {
+      "id": "0b3b7157-5798-443f-9248-446ca8efa977",
+      "type": "labels",
+      "options": {
+        "Hand-Wash Only": "b39ac950-8807-4de2-90ee-42e7246dfa0d",
+        "Cloud Server Dependency": "0c4376f0-3130-4d44-9cd3-3906d0a07fb0",
+        "Loud / Disrupts Post-Call Sleep": "ed726d8f-55b7-43fd-92d3-8ee1ca3c4b27",
+        "Non-Stick Coating Peels": "5311e654-8a14-45c0-b779-c582daf03677",
+        "Bulky Accessories": "5bfbe7e1-9a1f-4656-a25c-7d902c84f59b",
+        "Zero Flags": "d65fd8b5-295b-4969-ae55-2ef0e7dbe7ac"
+      }
+    },
+    "Added By": {
+      "id": "12ae86f2-737f-4258-a457-6c87297c4cab",
+      "type": "drop_down",
+      "options": {
+        "Zuha": "bac4e09e-7cf7-4f0f-b0f9-bac89528a23a",
+        "Fiancé": "f366c6e5-9a52-47c1-a5ea-fc421f30bc82"
+      }
+    },
+    "Subscription / Consumable Trap": {
+      "id": "186dba7a-8067-4e19-b976-589c04e27f6d",
+      "type": "drop_down",
+      "options": {
+        "Zero Ongoing Fees": "9e2cdbe6-7821-417d-8f2d-998d6149c533",
+        "Optional Cloud Features": "bc29857a-bdc9-46bf-b3f6-59de88758a52",
+        "Mandatory Paywall / Proprietary Cartridges": "ebacb58c-2958-419b-a0c1-4ff601ac20f0"
+      }
+    },
+    "Duplicate / Overlap Cluster": {
+      "id": "1dec0c8f-3b61-46ea-a7b9-132d5e76cf07",
+      "type": "short_text"
+    },
+    "Ecosystem Alignment": {
+      "id": "1e7d6a42-2a51-4776-9aa7-a625aac4495b",
+      "type": "drop_down",
+      "options": {
+        "Google / Gemini Native": "c092381e-ea12-4251-a888-3afa78e56183",
+        "Cross-Platform (Matter / HomeKit / API)": "ecd354c2-b4b9-4d72-80d1-05e1704abff5",
+        "Closed Proprietary Silo": "3c27eab2-7846-44dd-b2d7-bdf812edbe3a"
+      }
+    },
+    "Best Registry Vendor": {
+      "id": "252a7a02-7796-4000-95ac-f9d4ac31e8ae",
+      "type": "drop_down",
+      "options": {
+        "Amazon": "6473fbf4-63fa-4fb0-9837-84063f9446b7",
+        "Crate & Barrel": "13dab330-bb97-4adf-b98c-ee7b555e53c1",
+        "Williams Sonoma": "736e36a7-799a-40ce-bf19-976838b9f18b",
+        "Target": "b27937ac-992b-4eea-bccd-df367fa228d2",
+        "Best Buy": "902471bb-b070-4200-aefd-1662819c7425",
+        "Direct / Universal": "26e06bbb-3c70-4232-b4d9-ae80f976443b"
+      }
+    },
+    "Chore Offload Quotient": {
+      "id": "263cd81c-b389-4fbd-a21b-5c1139c286f3",
+      "type": "number"
+    },
+    "Review Divergence Flag": {
+      "id": "26b8cea9-af08-4b48-8ca7-18baa35fff0c",
+      "type": "drop_down",
+      "options": {
+        "Lab & Crowd Agree": "4b82ac7e-b6be-49db-89fa-60ffbd5f68ad",
+        "Lab Darling / Crowd Reports Early Failure": "adbea28f-e9a8-4145-8b8c-06d2cb44a623",
+        "Crowd Cult Classic / Unreviewed by Labs": "e8ae4365-1386-485e-8335-6b784e14d517",
+        "Sponsored Hype / AstroTurfed": "a3523aec-9af5-4d4e-9b62-f5e5e9b5585e"
+      }
+    },
+    "Beginner Cooking Safety & Automation": {
+      "id": "2eba772a-cc1f-4a7e-a73b-214efafb98e5",
+      "type": "drop_down",
+      "options": {
+        "One-Touch / Foolproof": "95985452-fddc-4dcf-98b2-e2fefd331e48",
+        "Guided App Recipes": "645a797e-880a-4748-abd2-c29912234b7b",
+        "Moderate Skill": "4d446b6e-c44d-46e4-ac10-41b6407c60f2",
+        "High Burn / Timing Skill Risk": "df5c25b1-3513-4d54-8dd8-e1c0ff8e54ca",
+        "Non-Kitchen": "4d2fafed-6a9f-4b5f-a8aa-7591af1af8ea"
+      }
+    },
+    "Clean Product Name": {
+      "id": "39c566b3-6c37-4c7e-999d-800000f902a3",
+      "type": "short_text"
+    },
+    "Apartment Spatial Footprint": {
+      "id": "468a011f-3b4a-408e-abee-bbbae1a890e1",
+      "type": "drop_down",
+      "options": {
+        "Countertop Hog": "57cf0c5e-7015-4714-beb5-164ae7595fc3",
+        "Compact / Stackable": "892dd016-f714-471d-bb3b-a05a7cc79b2c",
+        "Vertical / Wall / Under-Desk": "649805a2-e782-4b2a-92f5-5468da5207f7",
+        "Closet / Under-Bed": "384e960a-44ec-4030-9a0b-4145b3772fe0",
+        "Zero-Space (Digital/Service)": "72c46b8e-fd9e-4f71-8db2-aef0bd6887d3"
+      }
+    },
+    "Purchase & Shipping Timing": {
+      "id": "4b22f80a-d273-4139-a8e0-d1bb86bb7858",
+      "type": "drop_down",
+      "options": {
+        "Ship After Match Day / Move": "38eb7052-7aae-4985-a529-a016d14a7d79",
+        "Safe to Receive Pre-Move": "a9a5f492-83bb-49a6-9a87-8da5293284a3",
+        "Digital / Gift Card / Experience": "e7b905d3-7cef-4a7c-915f-3333c8515d76"
+      }
+    },
+    "Smart Ecosystem & Protocol": {
+      "id": "500e8b9e-71d3-4fdc-9229-465de39019aa",
+      "type": "labels",
+      "options": {
+        "Matter / Thread": "87004df7-4557-4aba-abdc-661fa8ce2b79",
+        "Apple HomeKit": "bd205fd8-f2b2-4f23-8d10-67d825e41c8c",
+        "Google Home": "d2d9e1d3-d57b-4d9c-b409-7067b9d5efeb",
+        "Amazon Alexa": "39a1832a-1ba0-42e0-a856-f2745cbbbc51",
+        "Home Assistant / Local API": "be2e3832-9ad5-45a1-bf45-c9924600316d",
+        "Zigbee / Z-Wave": "6f474f3a-b327-44db-8004-0d2e3f24eb0f",
+        "Walled-Garden App Only": "d070ff48-2b58-4485-a651-783700023037"
+      }
+    },
+    "Delivery Status": {
+      "id": "550e5a43-2bce-422e-91dc-8a67e5a3fc07",
+      "type": "drop_down",
+      "options": {
+        "Ordered": "7c547f2e-56da-49ca-bda1-97469d406e66",
+        "Shipped / In Transit": "45bab128-02f3-49b1-b60f-688fbf6f6af2",
+        "Delivered": "378baa96-c972-4a4d-aa4e-731cb005c622",
+        "Duplicate - Return Needed": "3ad29d73-09e2-47f4-b5f3-d85f6054f183"
+      }
+    },
+    "Product URL": {
+      "id": "5afbee8e-16bc-4c70-9acd-7647ffad17e4",
+      "type": "url"
+    },
+    "Dual-Career WFH Noise & Focus Score": {
+      "id": "6129f496-b9b9-483b-884c-95cdf49fee87",
+      "type": "drop_down",
+      "options": {
+        "Silent / Post-Call Safe": "3c6aea74-6eb4-4f03-889f-7e50c2c6b6b8",
+        "Run Only When Both Awake": "0834bb56-ab92-4015-9448-aa7a27f10c02",
+        "Not Applicable": "25e522be-603a-4ebd-a22d-0ef586014ed6"
+      }
+    },
+    "Gifted By / Buyer Name": {
+      "id": "62e11a44-da30-4b7b-801e-8b04fa9f4e06",
+      "type": "short_text"
+    },
+    "Order / Tracking Number": {
+      "id": "669c6837-8afb-452e-9ad4-4e3446613b5d",
+      "type": "short_text"
+    },
+    "Crowdsourced Longevity Score": {
+      "id": "6805a641-e43b-490e-8480-80e388fa549f",
+      "type": "number"
+    },
+    "Family Gift Pitch (1-Liner)": {
+      "id": "78a0c2db-312b-436a-b342-13fe9fe41112",
+      "type": "text"
+    },
+    "Known Failure Mode & MTBF": {
+      "id": "79ce0e9a-3d77-4158-8040-7371cd6f25e1",
+      "type": "short_text"
+    },
+    "Editorial Lab Rating": {
+      "id": "7b9ddfbb-eb03-4f5c-8f01-2c107eb361ff",
+      "type": "number"
+    },
+    "Halal Supply-Chain & City Fit": {
+      "id": "83f42a59-c059-4f49-beb3-93032e9a7460",
+      "type": "drop_down",
+      "options": {
+        "Critical for Small-Town WV Bulk/Freezer": "30072666-6289-46c8-acf8-a2c16bed48f9",
+        "High Value in Both TX & WV": "bfbd22ca-a38e-4ff8-badf-0dbf40b6ac25",
+        "Optimized for Houston/Dallas Takeout/Fresh": "cda5e4db-3d72-4fd9-aa2a-3ace96262af7",
+        "Not Applicable": "dd94f839-8eb3-4413-b35c-b0c9ab55946d"
+      }
+    },
+    "Residency Horizon Tier": {
+      "id": "8951eea6-f9bd-4497-84bf-9d2300251092",
+      "type": "drop_down",
+      "options": {
+        "7+ Yr Survivor (Attending-Ready)": "8a824736-8ed2-416d-95a2-8a8832b33f9b",
+        "Residency Workhorse (4–6 Yrs)": "8db765b3-3a2d-4945-8d77-85dc5c274607",
+        "3-Yr Disposable Risk": "bffe913e-b017-4698-9594-b2776ec83dec"
+      }
+    },
+    "Room / Zone": {
+      "id": "8991167a-0fd2-4a09-840c-4ef60986e5dd",
+      "type": "drop_down",
+      "options": {
+        "Kitchen & Halal Prep": "51467d11-13b0-4d79-8ba9-0fd53c0e2de5",
+        "Sleep & Post-Call Recovery": "24f98a71-551d-4f98-9406-9cd38260c795",
+        "Remote Home Office": "967e0842-bd2b-4bef-92aa-e51cdd6c5228",
+        "Cleaning & Laundry": "b075bc77-13df-4284-b6b6-83fc5a5becd6",
+        "Bath & Linen": "ccf65df1-48d6-437d-b76d-6a6b58ae762c"
+      }
+    },
+    "Autonomy & AI Capability": {
+      "id": "8b580144-c442-44c1-abae-c0245e4a28ac",
+      "type": "drop_down",
+      "options": {
+        "True Autonomous AI": "5e94c63b-5572-464d-9307-bf9a8114eb1b",
+        "Scheduled / App-Triggered": "1ffdac84-4739-4fe9-89f5-4700fb91d783",
+        "Smart-Plug / Fingerbot Retrofittable": "0d8022a3-5dc2-4cdc-b737-02b83525937d",
+        "Purely Manual": "2d03e9ef-348b-4f5e-ae45-47e28979b416"
+      }
+    },
+    "Family Assignment Tier": {
+      "id": "970b0b56-3d6e-47fa-afca-38fd36230a01",
+      "type": "drop_down",
+      "options": {
+        "Direct Relative / Aunt-Uncle Hero Gift": "6c2f79f3-0d24-4ee4-8cfc-4f717529571e",
+        "Sibling / Cousin Group-Gift Pool": "85cbd2b8-cce2-4592-98ba-74f8afc451a3",
+        "Public Registry Filler (<$100)": "b84091a3-5ea6-45e2-8650-d62188712437",
+        "Private Couple-Only Buy": "1e87c15c-50ae-49a7-9aa9-dac23349fe90"
+      }
+    },
+    "Retail Price": {
+      "id": "9c281fab-686d-4b34-a08d-cb6f4f785857",
+      "type": "currency"
+    },
+    "Cultural & Hosting Utility": {
+      "id": "ac72e4b8-2ed5-4d8b-bdc8-f107178d7f62",
+      "type": "drop_down",
+      "options": {
+        "High for Dawat / Family Visits": "a038cc69-c5ce-4076-acdc-d18a19c8aa16",
+        "Daily Couple Survival Only": "925750f9-1897-48c1-aeb4-e8acff6fae62"
+      }
+    },
+    "AI Subscription Redundancy Flag": {
+      "id": "ad5f45ed-df9c-4e9b-a446-2947255d8357",
+      "type": "drop_down",
+      "options": {
+        "Redundant AI Paywall (Skip)": "b2a3ef55-b7ff-4006-a2fd-eb9d25dfa08d",
+        "Enhances Claude / Gemini Workflows": "bb114269-7dbc-426d-a2fc-485ca2c12eff",
+        "Pure Hardware / No AI Overlap": "26507c87-635c-4096-b489-347d23bcb8d2"
+      }
+    },
+    "Off-Registry Buyability": {
+      "id": "afb8ecdd-966b-402b-8b5e-766237d860e8",
+      "type": "drop_down",
+      "options": {
+        "Safe for Direct Buy Anywhere": "01bd2120-133d-4c5b-b092-12ecbbbffda5",
+        "Exact Spec / Link Required": "d3077a7e-cd81-43ad-8805-98c682f483d2"
+      }
+    },
+    "Registry Decision Verdict": {
+      "id": "b10bb486-ceb9-4ec9-b5be-30045c1dc876",
+      "type": "drop_down",
+      "options": {
+        "Auto-Shortlist (High ROI)": "03c524cf-2261-49bf-b158-d75bd9dec2f5",
+        "Keep If Counter Space Allows": "4261e542-3028-40f1-81a5-4ee3eaf5f4a7",
+        "Swap for Smarter/BIFL Alternative": "b061dd30-7e71-4450-935b-2eb7cdec4ff0",
+        "Reject (Clutter/Failure Risk)": "597738cd-9ce8-4ef0-bd07-de37b92e17c5",
+        "Needs Manual Verification": "736ebe11-8bc1-49b3-81dc-7e7c98648eff"
+      }
+    },
+    "Residency Location Trigger": {
+      "id": "b9f2099b-aded-4ad4-83a5-ce8fb7456a1e",
+      "type": "drop_down",
+      "options": {
+        "Activate Only If Matched in WV / Small Town": "ff9c1a64-43a9-4665-8e7a-a5cfd4175731",
+        "Activate Only If Matched in Houston / Dallas": "4cea07e3-1c89-4a46-8d9f-044604eea4ae",
+        "Core Item Regardless of City": "cc21a41e-532c-4127-9df6-a0f2a548b9b3"
+      }
+    },
+    "Schedule Impact Role": {
+      "id": "c73bccc3-c099-48cc-be65-2de4b381b6f5",
+      "type": "labels",
+      "options": {
+        "80-Hr Shift Time-Saver": "479d805f-5da7-4679-9bb0-e7e262f31a20",
+        "Daytime Post-Call Sleep Protector": "495a4dd2-16a0-4a36-b994-4201f9b1c3dc",
+        "Remote-Work Ergonomics & Focus": "740dfe02-4cfd-4b3f-ab9e-7a4b2ed4551a",
+        "Weekend Chore Eliminator": "48076bc4-4425-427a-a84d-da7de79898cc"
+      }
+    },
+    "Completion Discount Eligible": {
+      "id": "d0e94867-2ac4-416e-8e67-a8166578c3fe",
+      "type": "checkbox"
+    },
+    "Moveability & Box Footprint": {
+      "id": "df1ca60e-e9c3-444f-8c72-6ca566aea10d",
+      "type": "drop_down",
+      "options": {
+        "Fits Standard Moving Box": "bbb879a6-9be1-444b-8624-f878e5088a65",
+        "Modular / Easy Disassembly": "134129ae-4f1d-4689-85b1-9ce023cf3c7a",
+        "Heavy Lift (50+ lbs)": "467372c7-d4ac-4d56-af51-43d83a3ff945",
+        "High-Breakage Fragile": "1361e07a-0c2f-47c3-9f7d-a7fcaae20015"
+      }
+    },
+    "Guest Price Bracket": {
+      "id": "e2247cef-64b9-429c-9bcc-bf9b60e25526",
+      "type": "drop_down",
+      "options": {
+        "<$50": "1949e004-587e-4b77-8c4c-87e49d4aef46",
+        "$50–$150": "e8087ca4-e624-4baf-a022-62240f5f7b59",
+        "$150–$300": "54048e14-106c-4211-a287-f935f924a246",
+        "$300+ (Group Gift)": "0803e69d-5b32-4323-917b-377bddf2ea4a"
+      }
+    },
+    "Spice, Oil & Apartment Odor Control": {
+      "id": "e3bfad24-fd4b-4953-ba62-15400da63b46",
+      "type": "drop_down",
+      "options": {
+        "Sealed / Low-Odor & Dishwasher-Safe": "61d0adfe-9922-463a-934f-7d7c1d44584d",
+        "Captures Turmeric/Tadka Odors": "3b75828b-954a-4fa7-9845-d0f23208eecc",
+        "High Splatter / Lingering Curry Smell Risk": "58660788-a03f-49c6-9570-d6dc50315c42",
+        "Not Applicable": "a732e8a5-bf60-4990-bbe3-5522a4b92118"
+      }
+    },
+    "Thank-You Note Status": {
+      "id": "f9883690-3b1a-4d34-bef1-32973bc00d74",
+      "type": "drop_down",
+      "options": {
+        "Not Needed Yet": "ee4badc1-c3bc-49ae-be7f-83ffe2bedea0",
+        "Drafted by AI": "e97f1e8b-2b78-406e-b907-ac6ac41fc22d",
+        "Sent ✓": "d66f2087-29b1-49dd-9a94-0ea56749de8f"
+      }
+    }
+  }
+}

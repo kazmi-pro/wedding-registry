@@ -1,0 +1,170 @@
+{
+  "name": "Zuha Registry — Flow C: Order Cockpit",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [{ "mode": "everyMinute" }]
+        },
+        "filters": {
+          "readStatus": "unread",
+          "subject": "order"
+        },
+        "options": {}
+      },
+      "id": "gmail-trigger-node",
+      "name": "Gmail Order Email Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-oauth-credential",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract order info from email\nconst email = $input.first().json;\nconst body = email.text || email.snippet || email.payload?.body?.data || '';\nconst subject = email.subject || '';\nconst from = email.from || '';\n\n// Detect retailer from sender/subject\nfunction detectRetailer(from, subject) {\n  const s = (from + ' ' + subject).toLowerCase();\n  if (s.includes('amazon')) return 'Amazon';\n  if (s.includes('target')) return 'Target';\n  if (s.includes('bestbuy') || s.includes('best buy')) return 'Best Buy';\n  if (s.includes('crateandbarrel') || s.includes('crate & barrel')) return 'Crate & Barrel';\n  if (s.includes('williams') && s.includes('sonoma')) return 'Williams Sonoma';\n  return 'Unknown';\n}\n\n// Extract tracking number\nfunction extractTracking(text) {\n  const patterns = [\n    /tracking(?:\\s+number)?:?\\s*([A-Z0-9]{10,30})/i,\n    /(?:UPS|USPS|FedEx|DHL)[^A-Z0-9]*([A-Z0-9]{10,30})/i,\n    /order\\s+(?:number|#|id):?\\s*([A-Z0-9\\-]{6,30})/i\n  ];\n  for (const p of patterns) {\n    const m = (text || '').match(p);\n    if (m) return m[1];\n  }\n  return null;\n}\n\n// Extract item name from subject\nfunction extractItem(subject) {\n  return subject\n    .replace(/^(your\\s+)?(order|purchase|confirmation)[:\\s]*/i, '')\n    .replace(/has\\s+(shipped|been\\s+delivered).*/i, '')\n    .trim()\n    .substring(0, 150);\n}\n\nconst retailer = detectRetailer(from, subject);\nconst tracking = extractTracking(body);\nconst itemHint = extractItem(subject);\n\n// Try to guess buyer from from-address\nlet buyer = '';\nconst emailMatch = from.match(/([^<@]+)/);\nif (emailMatch) buyer = emailMatch[1].trim().replace(/\"/g, '');\n\nreturn [{\n  json: {\n    emailId: email.id,\n    subject,\n    from,\n    retailer,\n    tracking,\n    itemHint,\n    buyer,\n    rawBody: body.substring(0, 2000)\n  }\n}];"
+      },
+      "id": "extract-order-info-node",
+      "name": "Extract Order Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/list/1300320000015716/task",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "query", "value": "={{ $json.itemHint.substring(0, 50) }}" },
+            { "name": "page", "value": "0" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-clickup-task-node",
+      "name": "Search ClickUp Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "clickup-api-credential",
+          "name": "ClickUp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Match the best ClickUp task to this order\nconst orderInfo = $node['Extract Order Info'].first().json;\nconst searchResult = $input.first().json;\nconst tasks = searchResult.tasks || [];\n\nif (tasks.length === 0) {\n  return [{ json: { noMatch: true, ...orderInfo } }];\n}\n\n// Pick the first result (best match from ClickUp search)\nconst task = tasks[0];\n\nconst THANK_YOU_DRAFTED_UUID = 'e97f1e8b-2b78-406e-b907-ac6ac41fc22d'; // Drafted by AI\nconst DELIVERY_ORDERED_UUID = '7c547f2e-56da-49ca-bda1-97469d406e66'; // Ordered\n\nconst thankYouDraft = `Dear ${orderInfo.buyer || 'Gift Giver'},\n\nThank you so much for the thoughtful gift! We truly appreciate your generosity and kindness.\n\nWith love,\nZuha & [Fiancé]`;\n\nreturn [{\n  json: {\n    taskId: task.id,\n    taskName: task.name,\n    orderInfo,\n    newStatus: 'PURCHASED / GIFTED',\n    deliveryStatusUuid: DELIVERY_ORDERED_UUID,\n    thankYouUuid: THANK_YOU_DRAFTED_UUID,\n    thankYouDraft,\n    customFields: [\n      { id: '62e11a44-da30-4b7b-801e-8b04fa9f4e06', value: orderInfo.buyer },\n      { id: '669c6837-8afb-452e-9ad4-4e3446613b5d', value: orderInfo.tracking || '' },\n      { id: '550e5a43-2bce-422e-91dc-8a67e5a3fc07', value: DELIVERY_ORDERED_UUID },\n      { id: 'f9883690-3b1a-4d34-bef1-32973bc00d74', value: THANK_YOU_DRAFTED_UUID }\n    ].filter(f => f.value)\n  }\n}];"
+      },
+      "id": "match-task-node",
+      "name": "Match & Build Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.noMatch }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "check-match-node",
+      "name": "Task Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/task/{{ $json.taskId }}",
+        "method": "PUT",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"PURCHASED / GIFTED\",\n  \"custom_fields\": {{ JSON.stringify($json.customFields) }}\n}",
+        "options": {}
+      },
+      "id": "update-task-purchased-node",
+      "name": "Mark PURCHASED / GIFTED",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 180],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "clickup-api-credential",
+          "name": "ClickUp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/task/{{ $json.taskId }}/comment",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"comment_text\": \"Thank-You Draft (AI):\\n\\n{{ $json.thankYouDraft }}\\n\\n---\\nRetailer: {{ $json.orderInfo.retailer }}\\nTracking: {{ $json.orderInfo.tracking || 'N/A' }}\"\n}",
+        "options": {}
+      },
+      "id": "post-thank-you-node",
+      "name": "Post Thank-You Draft Comment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 420],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "clickup-api-credential",
+          "name": "ClickUp API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Gmail Order Email Trigger": {
+      "main": [[ { "node": "Extract Order Info", "type": "main", "index": 0 } ]]
+    },
+    "Extract Order Info": {
+      "main": [[ { "node": "Search ClickUp Task", "type": "main", "index": 0 } ]]
+    },
+    "Search ClickUp Task": {
+      "main": [[ { "node": "Match & Build Update", "type": "main", "index": 0 } ]]
+    },
+    "Match & Build Update": {
+      "main": [[ { "node": "Task Found?", "type": "main", "index": 0 } ]]
+    },
+    "Task Found?": {
+      "main": [
+        [],
+        [
+          { "node": "Mark PURCHASED / GIFTED", "type": "main", "index": 0 },
+          { "node": "Post Thank-You Draft Comment", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "staticData": null,
+  "tags": [{ "name": "wedding-registry" }],
+  "triggerCount": 1,
+  "updatedAt": "2026-11-24T00:00:00.000Z",
+  "versionId": "v1"
+}
