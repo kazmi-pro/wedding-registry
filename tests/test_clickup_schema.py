@@ -77,7 +77,7 @@ def api_get(path, headers, params=None):
 
 def test_all_statuses(headers):
     data = api_get(f"/list/{LIST_ID}", headers)
-    statuses = {s["status"] for s in data.get("statuses", [])}
+    statuses = {s["status"].upper() for s in data.get("statuses", [])}
     # At least 7 statuses must exist (NEEDS QUICK DETAILS may be missing — manual step)
     assert len(statuses) >= 7, f"Expected >=7 statuses, found {len(statuses)}: {statuses}"
     required_known = {
